@@ -29,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id',)
 
-class LogInSerializer(TokenObtainPairSerializer): 
+class LogInSerializer(TokenObtainPairSerializer): # new
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
