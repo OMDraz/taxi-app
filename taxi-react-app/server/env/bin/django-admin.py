@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/Users/omardraz/Documents/GitHub/Taxi React/taxi-react-app/server/env/bin/python3.9
 # When the django-admin.py deprecation ends, remove this script.
 import warnings
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Users/omardraz/Documents/GitHub/Taxi React/taxi-react-app/server/env/bin/python3" "$0" "$@"
+'''exec' "/Users/omardraz/Documents/GitHub/Taxi React/taxi-react-app/server/env/bin/python3.9" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
