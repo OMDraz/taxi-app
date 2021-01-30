@@ -1,20 +1,19 @@
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-
+from trips.models import Trip
 from trips.serializers import NestedTripSerializer, TripSerializer  # new
 
 
 class TaxiConsumer(AsyncJsonWebsocketConsumer):
     groups = ['test']
 
-    # new
+
     @database_sync_to_async
     def _create_trip(self, data):
         serializer = TripSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return serializer.create(serializer.validated_data)
 
-    # new
     @database_sync_to_async
     def _get_trip_data(self, trip):
         return NestedTripSerializer(trip).data
@@ -22,6 +21,19 @@ class TaxiConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def _get_user_group(self, user):
         return user.groups.first().name
+
+    @database_sync_to_async
+    def _get_trip_ids(self, user):
+        user_groups = user.groups.values_list('name', flat=True)
+        if 'driver' in user_groups:
+            trip_ids = user.trips_as_driver.exclude(
+                status=Trip.COMPLETED
+            ).only('id').values_list('id', flat=True)
+        else:
+            trip_ids = user.trips_as_rider.exclude(
+                status=Trip.COMPLETED
+            ).only('id').values_list('id', flat=True)
+        return map(str, trip_ids)
 
     async def connect(self):
         user = self.scope['user']
@@ -43,19 +55,6 @@ class TaxiConsumer(AsyncJsonWebsocketConsumer):
                 )
 
             await self.accept()
-
-    @database_sync_to_async
-    def _get_trip_ids(self, user):
-        user_groups = user.groups.values_list('name', flat=True)
-        if 'driver' in user_groups:
-            trip_ids = user.trips_as_driver.exclude(
-                status=Trip.COMPLETED
-            ).only('id').values_list('id', flat=True)
-        else:
-            trip_ids = user.trips_as_rider.exclude(
-                status=Trip.COMPLETED
-            ).only('id').values_list('id', flat=True)
-        return map(str, trip_ids)
 
     # new
     async def create_trip(self, message):
@@ -139,11 +138,11 @@ class TaxiConsumer(AsyncJsonWebsocketConsumer):
             'data': trip_data
         })
 
-@database_sync_to_async
-def _update_trip(self, data):
-    instance = Trip.objects.get(id=data.get('id'))
-    serializer = TripSerializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    return serializer.update(instance, serializer.validated_data)
+    @database_sync_to_async
+    def _update_trip(self, data):
+        instance = Trip.objects.get(id=data.get('id'))
+        serializer = TripSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.update(instance, serializer.validated_data)
 
 
