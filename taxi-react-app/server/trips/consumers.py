@@ -111,7 +111,10 @@ class TaxiConsumer(AsyncJsonWebsocketConsumer):
             await self.create_trip(content)
         elif message_type == 'echo.message':
             await self.echo_message(content)
+        elif message_type == 'update.trip': # new
+            await self.update_trip(content)
 
+    # new
     async def update_trip(self, message):
         data = message.get('data')
         trip = await self._update_trip(data)
@@ -138,6 +141,7 @@ class TaxiConsumer(AsyncJsonWebsocketConsumer):
             'data': trip_data
         })
 
+    # new
     @database_sync_to_async
     def _update_trip(self, data):
         instance = Trip.objects.get(id=data.get('id'))

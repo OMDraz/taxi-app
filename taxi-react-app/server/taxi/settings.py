@@ -76,6 +76,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'taxi.wsgi.application'
 ASGI_APPLICATION = 'taxi.routing.application'
 
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases

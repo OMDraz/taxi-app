@@ -41,7 +41,7 @@ def create_trip(
     status='REQUESTED',
     rider=None,
     driver=None
-):
+    ):
     return Trip.objects.create(
         pick_up_address=pick_up_address,
         drop_off_address=drop_off_address,
@@ -54,7 +54,6 @@ def create_trip(
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 class TestWebSocket:
-
     async def test_can_connect_to_server(self, settings):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
         _, access = await create_user(
@@ -186,10 +185,17 @@ class TestWebSocket:
         await communicator.disconnect()
 
     async def test_create_trip_group(self, settings):
-        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS 
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
         user, access = await create_user(
             'test.user@example.com', 'pAssw0rd', 'rider'
         )
+        communicator = WebsocketCommunicator(
+            application=application,
+            path=f'/taxi/?token={access}'
+        )
+        connected, _ = await communicator.connect()
+
+        # Send a ride request.
         await communicator.send_json_to({
             'type': 'create.trip',
             'data': {
@@ -215,12 +221,12 @@ class TestWebSocket:
 
         await communicator.disconnect()
 
-    async def test_join_trip_group_on_connect(self, settings):
+    async def test_driver_join_trip_group_on_connect(self, settings):
         settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
         user, access = await create_user(
-            'test.user@example.com', 'pAssw0rd', 'rider'
+            'test.user@example.com', 'pAssw0rd', 'driver'
         )
-        trip = await create_trip(rider=user)
+        trip = await create_trip(driver=user)
         communicator = WebsocketCommunicator(
             application=application,
             path=f'/taxi/?token={access}'
@@ -241,27 +247,30 @@ class TestWebSocket:
 
         await communicator.disconnect()
 
+    
     async def test_driver_can_update_trip(self, settings):
-        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS 
+        settings.CHANNEL_LAYERS = TEST_CHANNEL_LAYERS
 
+        # Create trip request.
         rider, _ = await create_user(
             'test.rider@example.com', 'pAssw0rd', 'rider'
         )
         trip = await create_trip(rider=rider)
         trip_id = f'{trip.id}'
 
+        # Listen for messages as rider.
         channel_layer = get_channel_layer()
         await channel_layer.group_add(
             group=trip_id,
             channel='test_channel'
         )
 
+        # Update trip.
         driver, access = await create_user(
             'test.driver@example.com', 'pAssw0rd', 'driver'
         )
-        
         communicator = WebsocketCommunicator(
-            application = application,
+            application=application,
             path=f'/taxi/?token={access}'
         )
         connected, _ = await communicator.connect()
@@ -275,7 +284,6 @@ class TestWebSocket:
                 'driver': driver.id,
             },
         }
-        
         await communicator.send_json_to(message)
 
         # Rider receives message.
